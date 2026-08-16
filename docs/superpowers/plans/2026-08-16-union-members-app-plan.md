@@ -15,7 +15,7 @@
 - DB connection: `DB_USER=system`, `DB_PASSWORD=wasath123`, `DB_CONNECTION_STRING=localhost:1521/XEPDB1` (from user-provided `.env`).
 - Server: `PORT=5000`, `NODE_ENV=production`, `JWT_SECRET=itasset-dok-2025-change-this-in-prod`.
 - `node-oracledb` must run in **thin mode** — do not call `oracledb.initOracleClient()`, do not require Oracle Instant Client.
-- `member_id` is preserved from the source CSV (not auto-generated) — see spec Data Model.
+- `member_id` is preserved from the source CSV (not auto-generated) as **text**, `VARCHAR2(20)` — 257 of 359 source rows have an alphanumeric ID (e.g. `008A`), so `member_id`/`memberId` must never be coerced with `Number()` anywhere in backend or frontend code. See spec Data Model (amended).
 - All `/api/*` routes except `/api/auth/login` require a valid JWT (`Authorization: Bearer <token>`).
 - No automated frontend test suite (per spec Testing section) — manual walkthrough only, after Task 11.
 
@@ -223,6 +223,11 @@ git commit -m "feat: scaffold backend Express app with health check"
 ---
 
 ### Task 2: Oracle DB pool and schema creation script
+
+> **Amendment (post-Task-7 discovery):** `member_id` in the `members` table
+> below must be `VARCHAR2(20) PRIMARY KEY`, not `NUMBER PRIMARY KEY` — the
+> source CSV has alphanumeric IDs (e.g. `008A`) for 257/359 rows. See spec
+> Data Model (amended) and the plan's Global Constraints.
 
 **Files:**
 - Create: `backend/src/db/pool.js`
@@ -755,6 +760,13 @@ git commit -m "feat: add officers list route"
 
 ### Task 6: Members CRUD routes
 
+> **Amendment (post-Task-7 discovery):** `member_id`/`:id` is a string
+> (`VARCHAR2(20)`), not a number. Every `const id = Number(req.params.id)`
+> below must instead be `const id = req.params.id;` with a non-empty-string
+> guard (`if (!id) return res.status(400)...`) in place of the `isNaN` guard,
+> and `body.memberId`/bind values must be passed through as strings, never
+> `Number(...)`-coerced. See spec Data Model (amended).
+
 **Files:**
 - Create: `backend/src/routes/members.js`
 - Modify: `backend/src/app.js`
@@ -1089,6 +1101,15 @@ git commit -m "feat: add members CRUD routes"
 ---
 
 ### Task 7: CSV import script
+
+> **Amendment (discovered while implementing this task):** `Member ID`
+> values in the CSV are not all numeric (e.g. `008A`) — 257/359 rows.
+> `const memberId = Number(record['Member ID']);` below must instead be
+> `const memberId = (record['Member ID'] || '').trim();` with the validity
+> check changed from `if (!memberId || !memberName)` (falsy-number check) to
+> `if (!memberId || !memberName)` — this check already works correctly for
+> a non-empty string (empty string is falsy), so only the `Number()` coercion
+> needs to be removed. See spec Data Model (amended).
 
 **Files:**
 - Create: `backend/src/scripts/import-csv.js`
@@ -1816,6 +1837,11 @@ git commit -m "feat: add members list page with search, pagination, delete"
 ---
 
 ### Task 12: Add/Edit member form page
+
+> **Amendment (post-Task-7 discovery):** `memberId` is a string, not a
+> number. `body: JSON.stringify({ ...payload, memberId: Number(form.memberId) })`
+> below must instead send `memberId: form.memberId.trim()` (no `Number()`
+> coercion). See spec Data Model (amended).
 
 **Files:**
 - Create: `frontend/src/pages/MemberForm.jsx`

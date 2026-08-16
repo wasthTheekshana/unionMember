@@ -60,7 +60,7 @@ CREATE TABLE officers (
 );
 
 CREATE TABLE members (
-  member_id    NUMBER PRIMARY KEY,        -- preserved from source CSV, not generated
+  member_id    VARCHAR2(20) PRIMARY KEY, -- preserved from source CSV, not generated
   member_name  VARCHAR2(200) NOT NULL,
   officer_id   NUMBER REFERENCES officers(officer_id),
   phone        VARCHAR2(50),
@@ -78,9 +78,13 @@ CREATE TABLE users (
 );
 ```
 
-`member_id` is preserved as-is from the CSV (values are non-sequential,
-e.g. 1, 2, 5, 6, 9...) rather than auto-generated, so existing member
-numbering stays stable.
+`member_id` is preserved as-is from the CSV, as text, rather than auto-generated
+or typed as a number — so existing member numbering stays stable. The source
+data is not purely numeric: 257 of 359 rows carry an alphanumeric ID (e.g.
+`008A`, `011A`), so `member_id` is `VARCHAR2(20)`, not `NUMBER`. All API and
+UI code treats `member_id`/`memberId` as an opaque string, never coerced with
+`Number()`. (Amended after Task 7's CSV parsing surfaced this; see the
+implementation plan's ledger for the ruling.)
 
 ## Data Migration
 

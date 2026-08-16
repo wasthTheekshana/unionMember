@@ -7,7 +7,7 @@ const statements = [
     officer_name VARCHAR2(200) NOT NULL UNIQUE
   )`,
   `CREATE TABLE members (
-    member_id    NUMBER PRIMARY KEY,
+    member_id    VARCHAR2(20) PRIMARY KEY,
     member_name  VARCHAR2(200) NOT NULL,
     officer_id   NUMBER REFERENCES officers(officer_id),
     phone        VARCHAR2(50),

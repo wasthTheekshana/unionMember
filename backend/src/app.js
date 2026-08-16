@@ -3,6 +3,7 @@ const cors = require('cors');
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const officersRouter = require('./routes/officers');
+const membersRouter = require('./routes/members');
 
 function createApp() {
   const app = express();
@@ -12,6 +13,7 @@ function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/officers', officersRouter);
+  app.use('/api/members', membersRouter);
 
   return app;
 }

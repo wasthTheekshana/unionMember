@@ -8,7 +8,7 @@ function tokenFor() {
   return jwt.sign({ userId: 1, username: 'tester' }, process.env.JWT_SECRET, { expiresIn: '1h' });
 }
 
-const TEST_ID = 999001;
+const TEST_ID = '999001';
 
 describe('/api/members CRUD', () => {
   let app;

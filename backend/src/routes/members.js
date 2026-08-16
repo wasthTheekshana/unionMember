@@ -57,9 +57,9 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'id must be a number' });
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ error: 'id is required' });
   }
   const conn = await getConnection();
   try {
@@ -83,7 +83,7 @@ router.get('/:id', async (req, res) => {
 });
 
 function validateBody(body, { requireMemberId }) {
-  if (requireMemberId && (body.memberId === undefined || body.memberId === null)) {
+  if (requireMemberId && (!body.memberId || !String(body.memberId).trim())) {
     return 'memberId is required';
   }
   if (!body.memberName || !body.memberName.trim()) {
@@ -136,9 +136,9 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'id must be a number' });
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ error: 'id is required' });
   }
   const body = req.body || {};
   const error = validateBody(body, { requireMemberId: false });
@@ -186,9 +186,9 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'id must be a number' });
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ error: 'id is required' });
   }
   const conn = await getConnection();
   try {

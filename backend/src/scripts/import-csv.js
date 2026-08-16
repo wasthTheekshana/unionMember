@@ -40,7 +40,7 @@ async function run() {
     let imported = 0;
     let skipped = 0;
     for (const record of records) {
-      const memberId = Number(record['Member ID']);
+      const memberId = (record['Member ID'] || '').trim();
       const memberName = (record['Member Name'] || '').trim();
       const officerName = (record['Collecting Officer'] || '').trim();
       if (!memberId || !memberName) {

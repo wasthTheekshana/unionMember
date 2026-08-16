@@ -58,6 +58,9 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'id must be a number' });
+  }
   const conn = await getConnection();
   try {
     const result = await conn.execute(
@@ -72,6 +75,8 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Member not found' });
     }
     res.json(toMember(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
   } finally {
     await conn.close();
   }
@@ -132,6 +137,9 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'id must be a number' });
+  }
   const body = req.body || {};
   const error = validateBody(body, { requireMemberId: false });
   if (error) return res.status(400).json({ error });
@@ -170,6 +178,8 @@ router.put('/:id', async (req, res) => {
       { id }
     );
     res.json(toMember(updated.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
   } finally {
     await conn.close();
   }
@@ -177,6 +187,9 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   const id = Number(req.params.id);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'id must be a number' });
+  }
   const conn = await getConnection();
   try {
     const result = await conn.execute(`DELETE FROM members WHERE member_id = :id`, { id });
@@ -185,6 +198,8 @@ router.delete('/:id', async (req, res) => {
     }
     await conn.commit();
     res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
   } finally {
     await conn.close();
   }

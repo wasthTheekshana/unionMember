@@ -30,7 +30,7 @@ router.get('/', asyncHandler(async (req, res) => {
     const binds = search ? { search: `%${search.toLowerCase()}%` } : {};
 
     const countResult = await conn.execute(
-      `SELECT COUNT(*) AS total FROM members m ${whereClause}`,
+      `SELECT COUNT(*) AS total FROM pm_members m ${whereClause}`,
       binds
     );
     const total = countResult.rows[0].TOTAL;
@@ -38,8 +38,8 @@ router.get('/', asyncHandler(async (req, res) => {
     const listResult = await conn.execute(
       `SELECT m.member_id, m.member_name, m.officer_id, o.officer_name,
               m.phone, m.email, m.address
-       FROM members m
-       LEFT JOIN officers o ON o.officer_id = m.officer_id
+       FROM pm_members m
+       LEFT JOIN pm_officers o ON o.officer_id = m.officer_id
        ${whereClause}
        ORDER BY m.member_name
        OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`,
@@ -67,8 +67,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
     const result = await conn.execute(
       `SELECT m.member_id, m.member_name, m.officer_id, o.officer_name,
               m.phone, m.email, m.address
-       FROM members m
-       LEFT JOIN officers o ON o.officer_id = m.officer_id
+       FROM pm_members m
+       LEFT JOIN pm_officers o ON o.officer_id = m.officer_id
        WHERE m.member_id = :id`,
       { id }
     );
@@ -103,7 +103,7 @@ router.post('/', asyncHandler(async (req, res) => {
   try {
     if (body.officerId) {
       const officerCheck = await conn.execute(
-        `SELECT officer_id FROM officers WHERE officer_id = :officerId`,
+        `SELECT officer_id FROM pm_officers WHERE officer_id = :officerId`,
         { officerId: body.officerId }
       );
       if (officerCheck.rows.length === 0) {
@@ -112,7 +112,7 @@ router.post('/', asyncHandler(async (req, res) => {
     }
 
     await conn.execute(
-      `INSERT INTO members (member_id, member_name, officer_id, phone, email, address)
+      `INSERT INTO pm_members (member_id, member_name, officer_id, phone, email, address)
        VALUES (:memberId, :memberName, :officerId, :phone, :email, :address)`,
       {
         memberId: body.memberId,
@@ -128,8 +128,8 @@ router.post('/', asyncHandler(async (req, res) => {
     const created = await conn.execute(
       `SELECT m.member_id, m.member_name, m.officer_id, o.officer_name,
               m.phone, m.email, m.address
-       FROM members m
-       LEFT JOIN officers o ON o.officer_id = m.officer_id
+       FROM pm_members m
+       LEFT JOIN pm_officers o ON o.officer_id = m.officer_id
        WHERE m.member_id = :id`,
       { id: body.memberId }
     );
@@ -157,7 +157,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
   try {
     if (body.officerId) {
       const officerCheck = await conn.execute(
-        `SELECT officer_id FROM officers WHERE officer_id = :officerId`,
+        `SELECT officer_id FROM pm_officers WHERE officer_id = :officerId`,
         { officerId: body.officerId }
       );
       if (officerCheck.rows.length === 0) {
@@ -166,7 +166,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
 
     const result = await conn.execute(
-      `UPDATE members
+      `UPDATE pm_members
        SET member_name = :memberName,
            officer_id = :officerId,
            phone = :phone,
@@ -191,8 +191,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
     const updated = await conn.execute(
       `SELECT m.member_id, m.member_name, m.officer_id, o.officer_name,
               m.phone, m.email, m.address
-       FROM members m
-       LEFT JOIN officers o ON o.officer_id = m.officer_id
+       FROM pm_members m
+       LEFT JOIN pm_officers o ON o.officer_id = m.officer_id
        WHERE m.member_id = :id`,
       { id }
     );
@@ -209,7 +209,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   }
   const conn = await getConnection();
   try {
-    const result = await conn.execute(`DELETE FROM members WHERE member_id = :id`, { id });
+    const result = await conn.execute(`DELETE FROM pm_members WHERE member_id = :id`, { id });
     if (result.rowsAffected === 0) {
       return res.status(404).json({ error: 'Member not found' });
     }

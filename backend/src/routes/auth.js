@@ -15,7 +15,7 @@ router.post('/login', asyncHandler(async (req, res) => {
   const conn = await getConnection();
   try {
     const result = await conn.execute(
-      `SELECT user_id, username, password_hash FROM users WHERE username = :username`,
+      `SELECT user_id, username, password_hash FROM pm_users WHERE username = :username`,
       { username }
     );
     const user = result.rows[0];

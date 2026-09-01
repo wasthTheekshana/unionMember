@@ -17,7 +17,7 @@ describe('POST /api/auth/login', () => {
     try {
       const hash = await bcrypt.hash(TEST_PASSWORD, 10);
       await conn.execute(
-        `INSERT INTO users (username, password_hash) VALUES (:u, :p)`,
+        `INSERT INTO pm_users (username, password_hash) VALUES (:u, :p)`,
         { u: TEST_USERNAME, p: hash }
       );
       await conn.commit();
@@ -29,7 +29,7 @@ describe('POST /api/auth/login', () => {
   afterAll(async () => {
     const conn = await getConnection();
     try {
-      await conn.execute(`DELETE FROM users WHERE username = :u`, { u: TEST_USERNAME });
+      await conn.execute(`DELETE FROM pm_users WHERE username = :u`, { u: TEST_USERNAME });
       await conn.commit();
     } finally {
       await conn.close();

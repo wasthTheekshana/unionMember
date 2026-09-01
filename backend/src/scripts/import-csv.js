@@ -22,14 +22,14 @@ async function run() {
     const officerIdByName = {};
     for (const name of officerNames) {
       const existing = await conn.execute(
-        `SELECT officer_id FROM officers WHERE officer_name = :n`,
+        `SELECT officer_id FROM pm_officers WHERE officer_name = :n`,
         { n: name }
       );
       if (existing.rows.length > 0) {
         officerIdByName[name] = existing.rows[0].OFFICER_ID;
       } else {
         const inserted = await conn.execute(
-          `INSERT INTO officers (officer_name) VALUES (:n) RETURNING officer_id INTO :id`,
+          `INSERT INTO pm_officers (officer_name) VALUES (:n) RETURNING officer_id INTO :id`,
           { n: name, id: { dir: require('oracledb').BIND_OUT, type: require('oracledb').NUMBER } }
         );
         officerIdByName[name] = inserted.outBinds.id[0];
@@ -49,7 +49,7 @@ async function run() {
       }
 
       const exists = await conn.execute(
-        `SELECT member_id FROM members WHERE member_id = :id`,
+        `SELECT member_id FROM pm_members WHERE member_id = :id`,
         { id: memberId }
       );
       if (exists.rows.length > 0) {
@@ -58,7 +58,7 @@ async function run() {
       }
 
       await conn.execute(
-        `INSERT INTO members (member_id, member_name, officer_id)
+        `INSERT INTO pm_members (member_id, member_name, officer_id)
          VALUES (:memberId, :memberName, :officerId)`,
         {
           memberId,

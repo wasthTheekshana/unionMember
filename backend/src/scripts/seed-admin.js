@@ -23,7 +23,7 @@ async function run() {
   const conn = await getConnection();
   try {
     const existing = await conn.execute(
-      `SELECT user_id FROM users WHERE username = :u`,
+      `SELECT user_id FROM pm_users WHERE username = :u`,
       { u: username }
     );
     if (existing.rows.length > 0) {
@@ -33,7 +33,7 @@ async function run() {
 
     const hash = await bcrypt.hash(password, 10);
     await conn.execute(
-      `INSERT INTO users (username, password_hash) VALUES (:u, :p)`,
+      `INSERT INTO pm_users (username, password_hash) VALUES (:u, :p)`,
       { u: username, p: hash }
     );
     await conn.commit();

@@ -20,7 +20,7 @@ describe('GET /api/officers', () => {
     const conn = await getConnection();
     try {
       await conn.execute(
-        `INSERT INTO officers (officer_name) VALUES (:n)`,
+        `INSERT INTO pm_officers (officer_name) VALUES (:n)`,
         { n: TEST_OFFICER }
       );
       await conn.commit();
@@ -32,7 +32,7 @@ describe('GET /api/officers', () => {
   afterAll(async () => {
     const conn = await getConnection();
     try {
-      await conn.execute(`DELETE FROM officers WHERE officer_name = :n`, { n: TEST_OFFICER });
+      await conn.execute(`DELETE FROM pm_officers WHERE officer_name = :n`, { n: TEST_OFFICER });
       await conn.commit();
     } finally {
       await conn.close();

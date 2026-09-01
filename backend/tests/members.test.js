@@ -22,7 +22,7 @@ describe('/api/members CRUD', () => {
   afterEach(async () => {
     const conn = await getConnection();
     try {
-      await conn.execute(`DELETE FROM members WHERE member_id = :id`, { id: TEST_ID });
+      await conn.execute(`DELETE FROM pm_members WHERE member_id = :id`, { id: TEST_ID });
       await conn.commit();
     } finally {
       await conn.close();

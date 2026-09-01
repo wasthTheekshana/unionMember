@@ -1,28 +1,33 @@
 require('dotenv').config();
 const { initPool, closePool, getConnection } = require('../db/pool');
 
+// Tables are prefixed pm_ because this app runs in a shared Oracle "system"
+// schema alongside other applications — unprefixed names like `users` collide
+// with tables those other apps already own (e.g. an existing HR/payroll
+// `users` table with completely different columns).
 const statements = [
-  `CREATE TABLE officers (
+  `CREATE TABLE pm_officers (
     officer_id   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     officer_name VARCHAR2(200) NOT NULL UNIQUE
   )`,
-  // NOTE: if a `members` table already exists on this DB with member_id as NUMBER
-  // (from before alphanumeric member IDs were discovered in the source CSV), this
-  // script will silently skip it (see ORA_NAME_ALREADY_USED handling below) without
-  // correcting the column type. member_id must be VARCHAR2(20) — if you find an
-  // existing NUMBER-typed members table, drop and recreate it manually before
-  // re-running this script / the CSV import.
-  `CREATE TABLE members (
+  // NOTE: if a `pm_members` table already exists on this DB with member_id as
+  // NUMBER (from before alphanumeric member IDs were discovered in the source
+  // CSV), this script will silently skip it (see ORA_NAME_ALREADY_USED
+  // handling below) without correcting the column type. member_id must be
+  // VARCHAR2(20) — if you find an existing NUMBER-typed pm_members table,
+  // drop and recreate it manually before re-running this script / the CSV
+  // import.
+  `CREATE TABLE pm_members (
     member_id    VARCHAR2(20) PRIMARY KEY,
     member_name  VARCHAR2(200) NOT NULL,
-    officer_id   NUMBER REFERENCES officers(officer_id),
+    officer_id   NUMBER REFERENCES pm_officers(officer_id),
     phone        VARCHAR2(50),
     email        VARCHAR2(200),
     address      VARCHAR2(500),
     created_at   TIMESTAMP DEFAULT SYSTIMESTAMP,
     updated_at   TIMESTAMP DEFAULT SYSTIMESTAMP
   )`,
-  `CREATE TABLE users (
+  `CREATE TABLE pm_users (
     user_id       NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     username      VARCHAR2(100) NOT NULL UNIQUE,
     password_hash VARCHAR2(255) NOT NULL,

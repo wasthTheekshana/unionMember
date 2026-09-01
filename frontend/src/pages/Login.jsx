@@ -25,29 +25,34 @@ export default function Login() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 380, marginTop: 80 }}>
-      <div className="card">
-        <h2>Union Members Login</h2>
-        {error && <div className="error">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoFocus
-          />
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button type="submit" disabled={submitting}>
-            {submitting ? 'Logging in...' : 'Log In'}
-          </button>
-        </form>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="card">
+          <h2 className="login-title">Welcome back</h2>
+          <p className="login-subtitle">Log in to manage union members</p>
+          {error && <div className="error">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="username">Username</label>
+            <input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              autoFocus
+            />
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            <button type="submit" disabled={submitting} style={{ width: '100%' }}>
+              {submitting ? 'Logging in...' : 'Log In'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

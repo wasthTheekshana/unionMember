@@ -1,13 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { apiFetch } from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import Header from '../components/Header';
 
 const PAGE_SIZE = 20;
 
 export default function MembersList() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -48,62 +46,62 @@ export default function MembersList() {
     }
   }
 
-  function handleLogout() {
-    logout();
-    navigate('/login');
-  }
-
   const totalPages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
 
   return (
-    <div className="container">
-      <div className="topbar">
-        <h2>Union Members</h2>
-        <div>
-          <Link to="/members/new"><button>Add Member</button></Link>{' '}
-          <button className="secondary" onClick={handleLogout}>Log Out</button>
+    <>
+      <Header />
+      <div className="container">
+        <div className="toolbar">
+          <h2>Union Members</h2>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <input
+              className="search-input"
+              placeholder="Search by name..."
+              value={search}
+              onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+            />
+            <Link to="/members/new"><button>Add Member</button></Link>
+          </div>
+        </div>
+        <div className="card">
+          {error && <div className="error">{error}</div>}
+          {loading ? (
+            <div className="loading-state">Loading members…</div>
+          ) : items.length === 0 ? (
+            <div className="empty-state">No members found.</div>
+          ) : (
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th><th>Name</th><th>Officer</th><th>Phone</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((m) => (
+                    <tr key={m.memberId}>
+                      <td>{m.memberId}</td>
+                      <td>{m.memberName}</td>
+                      <td>{m.officerName || '—'}</td>
+                      <td>{m.phone || '—'}</td>
+                      <td className="actions">
+                        <Link to={`/members/${m.memberId}/edit`}><button className="secondary">Edit</button></Link>
+                        <button className="danger" onClick={() => handleDelete(m.memberId)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="pagination">
+                <button className="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
+                <span>Page {page} of {totalPages}</span>
+                <button className="secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
-      <div className="card">
-        <input
-          placeholder="Search by name..."
-          value={search}
-          onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-        />
-        {error && <div className="error">{error}</div>}
-        {loading ? (
-          <div>Loading...</div>
-        ) : (
-          <>
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th><th>Name</th><th>Officer</th><th>Phone</th><th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((m) => (
-                  <tr key={m.memberId}>
-                    <td>{m.memberId}</td>
-                    <td>{m.memberName}</td>
-                    <td>{m.officerName || '-'}</td>
-                    <td>{m.phone || '-'}</td>
-                    <td className="actions">
-                      <Link to={`/members/${m.memberId}/edit`}><button>Edit</button></Link>
-                      <button className="danger" onClick={() => handleDelete(m.memberId)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div style={{ marginTop: 12 }}>
-              <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>{' '}
-              <span>Page {page} of {totalPages}</span>{' '}
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+    </>
   );
 }

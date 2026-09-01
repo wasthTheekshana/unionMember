@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api/client';
+import Header from '../components/Header';
 
 const emptyForm = { memberId: '', memberName: '', officerId: '', phone: '', email: '', address: '' };
 
@@ -66,50 +67,74 @@ export default function MemberForm() {
     }
   }
 
-  if (loading) return <div className="container"><div className="card">Loading...</div></div>;
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="container" style={{ maxWidth: 560 }}>
+          <div className="card">Loading…</div>
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div className="container" style={{ maxWidth: 480 }}>
-      <div className="card">
-        <h2>{isEdit ? 'Edit Member' : 'Add Member'}</h2>
-        {error && <div className="error">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="memberId">Member ID</label>
-          <input
-            id="memberId"
-            value={form.memberId}
-            disabled={isEdit}
-            onChange={(e) => update('memberId', e.target.value)}
-          />
+    <>
+      <Header />
+      <div className="container" style={{ maxWidth: 560 }}>
+        <div className="card">
+          <h2>{isEdit ? 'Edit Member' : 'Add Member'}</h2>
+          {error && <div className="error">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="form-row">
+              <div>
+                <label htmlFor="memberId">Member ID</label>
+                <input
+                  id="memberId"
+                  value={form.memberId}
+                  disabled={isEdit}
+                  onChange={(e) => update('memberId', e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="memberName">Member Name</label>
+                <input
+                  id="memberName"
+                  value={form.memberName}
+                  onChange={(e) => update('memberName', e.target.value)}
+                />
+              </div>
+            </div>
 
-          <label htmlFor="memberName">Member Name</label>
-          <input
-            id="memberName"
-            value={form.memberName}
-            onChange={(e) => update('memberName', e.target.value)}
-          />
+            <label htmlFor="officerId">Collecting Officer</label>
+            <select id="officerId" value={form.officerId} onChange={(e) => update('officerId', e.target.value)}>
+              <option value="">-- none --</option>
+              {officers.map((o) => (
+                <option key={o.officerId} value={o.officerId}>{o.officerName}</option>
+              ))}
+            </select>
 
-          <label htmlFor="officerId">Collecting Officer</label>
-          <select id="officerId" value={form.officerId} onChange={(e) => update('officerId', e.target.value)}>
-            <option value="">-- none --</option>
-            {officers.map((o) => (
-              <option key={o.officerId} value={o.officerId}>{o.officerName}</option>
-            ))}
-          </select>
+            <div className="form-row">
+              <div>
+                <label htmlFor="phone">Phone</label>
+                <input id="phone" value={form.phone} onChange={(e) => update('phone', e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="email">Email</label>
+                <input id="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
+              </div>
+            </div>
 
-          <label htmlFor="phone">Phone</label>
-          <input id="phone" value={form.phone} onChange={(e) => update('phone', e.target.value)} />
+            <label htmlFor="address">Address</label>
+            <input id="address" value={form.address} onChange={(e) => update('address', e.target.value)} />
 
-          <label htmlFor="email">Email</label>
-          <input id="email" value={form.email} onChange={(e) => update('email', e.target.value)} />
-
-          <label htmlFor="address">Address</label>
-          <input id="address" value={form.address} onChange={(e) => update('address', e.target.value)} />
-
-          <button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>{' '}
-          <button type="button" className="secondary" onClick={() => navigate('/')}>Cancel</button>
-        </form>
+            <div className="form-actions">
+              <button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+              <button type="button" className="secondary" onClick={() => navigate('/')}>Cancel</button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

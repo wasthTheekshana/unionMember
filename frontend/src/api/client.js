@@ -19,6 +19,11 @@ export async function apiFetch(path, options = {}) {
 
   const res = await fetch(`/api${path}`, { ...options, headers });
 
+  if (res.status === 401 && path !== '/auth/login') {
+    setToken(null);
+    window.location.href = '/login';
+  }
+
   if (res.status === 204) return null;
 
   const isJson = res.headers.get('content-type')?.includes('application/json');

@@ -3,11 +3,8 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Login from './pages/Login';
 import MembersList from './pages/MembersList';
+import MemberForm from './pages/MemberForm';
 import './styles.css';
-
-function Placeholder({ text }) {
-  return <div className="container"><div className="card">{text}</div></div>;
-}
 
 export default function App() {
   return (
@@ -16,8 +13,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><MembersList /></ProtectedRoute>} />
-          <Route path="/members/new" element={<Placeholder text="Add member form coming in Task 12" />} />
-          <Route path="/members/:id/edit" element={<Placeholder text="Edit member form coming in Task 12" />} />
+          <Route path="/members/new" element={<ProtectedRoute><MemberForm /></ProtectedRoute>} />
+          <Route path="/members/:id/edit" element={<ProtectedRoute><MemberForm /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

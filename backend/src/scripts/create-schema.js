@@ -6,6 +6,12 @@ const statements = [
     officer_id   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     officer_name VARCHAR2(200) NOT NULL UNIQUE
   )`,
+  // NOTE: if a `members` table already exists on this DB with member_id as NUMBER
+  // (from before alphanumeric member IDs were discovered in the source CSV), this
+  // script will silently skip it (see ORA_NAME_ALREADY_USED handling below) without
+  // correcting the column type. member_id must be VARCHAR2(20) — if you find an
+  // existing NUMBER-typed members table, drop and recreate it manually before
+  // re-running this script / the CSV import.
   `CREATE TABLE members (
     member_id    VARCHAR2(20) PRIMARY KEY,
     member_name  VARCHAR2(200) NOT NULL,

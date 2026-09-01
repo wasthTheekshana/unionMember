@@ -15,6 +15,11 @@ function createApp() {
   app.use('/api/officers', officersRouter);
   app.use('/api/members', membersRouter);
 
+  app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  });
+
   return app;
 }
 

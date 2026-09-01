@@ -1,10 +1,11 @@
 const express = require('express');
 const { getConnection } = require('../db/pool');
 const { requireAuth } = require('../middleware/auth');
+const { asyncHandler } = require('../middleware/asyncHandler');
 
 const router = express.Router();
 
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const conn = await getConnection();
   try {
     const result = await conn.execute(
@@ -18,6 +19,6 @@ router.get('/', requireAuth, async (req, res) => {
   } finally {
     await conn.close();
   }
-});
+}));
 
 module.exports = router;

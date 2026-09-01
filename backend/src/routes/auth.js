@@ -2,10 +2,11 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getConnection } = require('../db/pool');
+const { asyncHandler } = require('../middleware/asyncHandler');
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ error: 'username and password are required' });
@@ -36,6 +37,6 @@ router.post('/login', async (req, res) => {
   } finally {
     await conn.close();
   }
-});
+}));
 
 module.exports = router;

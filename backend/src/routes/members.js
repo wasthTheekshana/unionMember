@@ -1,6 +1,7 @@
 const express = require('express');
 const { getConnection } = require('../db/pool');
 const { requireAuth } = require('../middleware/auth');
+const { asyncHandler } = require('../middleware/asyncHandler');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -17,7 +18,7 @@ function toMember(row) {
   };
 }
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const search = (req.query.search || '').trim();
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
   const pageSize = Math.min(Math.max(parseInt(req.query.pageSize, 10) || 20, 1), 100);
@@ -40,7 +41,7 @@ router.get('/', async (req, res) => {
        FROM members m
        LEFT JOIN officers o ON o.officer_id = m.officer_id
        ${whereClause}
-       ORDER BY m.member_id
+       ORDER BY m.member_name
        OFFSET :offset ROWS FETCH NEXT :pageSize ROWS ONLY`,
       { ...binds, offset, pageSize }
     );
@@ -54,9 +55,9 @@ router.get('/', async (req, res) => {
   } finally {
     await conn.close();
   }
-});
+}));
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res) => {
   const id = req.params.id;
   if (!id) {
     return res.status(400).json({ error: 'id is required' });
@@ -75,12 +76,10 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Member not found' });
     }
     res.json(toMember(result.rows[0]));
-  } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
   } finally {
     await conn.close();
   }
-});
+}));
 
 function validateBody(body, { requireMemberId }) {
   if (requireMemberId && (!body.memberId || !String(body.memberId).trim())) {
@@ -95,13 +94,23 @@ function validateBody(body, { requireMemberId }) {
   return null;
 }
 
-router.post('/', async (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const body = req.body || {};
   const error = validateBody(body, { requireMemberId: true });
   if (error) return res.status(400).json({ error });
 
   const conn = await getConnection();
   try {
+    if (body.officerId) {
+      const officerCheck = await conn.execute(
+        `SELECT officer_id FROM officers WHERE officer_id = :officerId`,
+        { officerId: body.officerId }
+      );
+      if (officerCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'officerId does not reference an existing officer' });
+      }
+    }
+
     await conn.execute(
       `INSERT INTO members (member_id, member_name, officer_id, phone, email, address)
        VALUES (:memberId, :memberName, :officerId, :phone, :email, :address)`,
@@ -133,9 +142,9 @@ router.post('/', async (req, res) => {
   } finally {
     await conn.close();
   }
-});
+}));
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', asyncHandler(async (req, res) => {
   const id = req.params.id;
   if (!id) {
     return res.status(400).json({ error: 'id is required' });
@@ -146,6 +155,16 @@ router.put('/:id', async (req, res) => {
 
   const conn = await getConnection();
   try {
+    if (body.officerId) {
+      const officerCheck = await conn.execute(
+        `SELECT officer_id FROM officers WHERE officer_id = :officerId`,
+        { officerId: body.officerId }
+      );
+      if (officerCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'officerId does not reference an existing officer' });
+      }
+    }
+
     const result = await conn.execute(
       `UPDATE members
        SET member_name = :memberName,
@@ -178,14 +197,12 @@ router.put('/:id', async (req, res) => {
       { id }
     );
     res.json(toMember(updated.rows[0]));
-  } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
   } finally {
     await conn.close();
   }
-});
+}));
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', asyncHandler(async (req, res) => {
   const id = req.params.id;
   if (!id) {
     return res.status(400).json({ error: 'id is required' });
@@ -198,11 +215,9 @@ router.delete('/:id', async (req, res) => {
     }
     await conn.commit();
     res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ error: 'Internal server error' });
   } finally {
     await conn.close();
   }
-});
+}));
 
 module.exports = router;

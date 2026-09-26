@@ -80,9 +80,12 @@ This produces `frontend/dist/`, which nginx serves directly as static files
 
 ## 4. Start the backend with PM2
 
-From the repo root (`/home/UnionMangementSystem`):
+`ecosystem.config.js` uses relative paths (`./backend`, `./logs/...`), so it
+**must be run from the repo root** (`/home/UnionMangementSystem`) — PM2
+resolves them relative to the directory you run `pm2 start` from:
 
 ```bash
+cd /home/UnionMangementSystem
 pm2 start ecosystem.config.js
 pm2 save
 ```

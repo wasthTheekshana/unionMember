@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'union-members-backend',
-    cwd: '/home/UnionMangementSystem/backend',
+    cwd: './backend',
     script: 'server.js',
     instances: 1,
     exec_mode: 'fork',
@@ -14,9 +14,9 @@ module.exports = {
       LD_LIBRARY_PATH: '/opt/oracle/product/21c/dbhomeXE/lib',
       ORACLE_HOME: '/opt/oracle/product/21c/dbhomeXE'
     },
-    error_file: '/home/UnionMangementSystem/logs/backend-error.log',
-    out_file: '/home/UnionMangementSystem/logs/backend-out.log',
-    log_file: '/home/UnionMangementSystem/logs/backend-combined.log',
+    error_file: './logs/backend-error.log',
+    out_file: './logs/backend-out.log',
+    log_file: './logs/backend-combined.log',
     time: true
   }]
 };

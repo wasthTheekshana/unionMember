@@ -1,13 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Plus, Pencil, Trash2, Search, Users, UserCog } from 'lucide-react';
 import { apiFetch } from '../api/client';
-import Header from '../components/Header';
+import Layout from '../components/Layout';
 
 const PAGE_SIZE = 20;
 
 export default function MembersList() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
+  const [officerCount, setOfficerCount] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
@@ -36,6 +38,10 @@ export default function MembersList() {
     load(page, search);
   }, [load, page, search]);
 
+  useEffect(() => {
+    apiFetch('/officers').then((data) => setOfficerCount(data.length)).catch(() => setOfficerCount(null));
+  }, []);
+
   async function handleDelete(memberId) {
     if (!window.confirm(`Delete member ${memberId}?`)) return;
     try {
@@ -49,19 +55,40 @@ export default function MembersList() {
   const totalPages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
 
   return (
-    <>
-      <Header />
+    <Layout>
       <div className="container">
+        <div className="stat-row">
+          <div className="stat-card">
+            <div className="stat-icon stat-icon-accent"><Users size={20} /></div>
+            <div>
+              <div className="stat-value">{total}</div>
+              <div className="stat-label">Total Members</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon stat-icon-muted"><UserCog size={20} /></div>
+            <div>
+              <div className="stat-value">{officerCount ?? '—'}</div>
+              <div className="stat-label">Collecting Officers</div>
+            </div>
+          </div>
+        </div>
+
         <div className="toolbar">
-          <h2>Union Members</h2>
+          <h2>Members</h2>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <input
-              className="search-input"
-              placeholder="Search by name..."
-              value={search}
-              onChange={(e) => { setPage(1); setSearch(e.target.value); }}
-            />
-            <Link to="/members/new"><button>Add Member</button></Link>
+            <div className="search-wrap">
+              <Search size={16} className="search-icon" />
+              <input
+                className="search-input"
+                placeholder="Search by name..."
+                value={search}
+                onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+              />
+            </div>
+            <Link to="/members/new">
+              <button><Plus size={16} /> Add Member</button>
+            </Link>
           </div>
         </div>
         <div className="card">
@@ -86,8 +113,12 @@ export default function MembersList() {
                       <td>{m.officerName || '—'}</td>
                       <td>{m.phone || '—'}</td>
                       <td className="actions">
-                        <Link to={`/members/${m.memberId}/edit`}><button className="secondary">Edit</button></Link>
-                        <button className="danger" onClick={() => handleDelete(m.memberId)}>Delete</button>
+                        <Link to={`/members/${m.memberId}/edit`}>
+                          <button className="secondary"><Pencil size={14} /> Edit</button>
+                        </Link>
+                        <button className="danger" onClick={() => handleDelete(m.memberId)}>
+                          <Trash2 size={14} /> Delete
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -102,6 +133,6 @@ export default function MembersList() {
           )}
         </div>
       </div>
-    </>
+    </Layout>
   );
 }

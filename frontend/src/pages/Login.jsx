@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -26,8 +27,19 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        <div className="card">
+      <div className="login-panel">
+        <div className="login-panel-brand">
+          <span className="brand-dot brand-dot-light" />
+          Union Members
+        </div>
+        <h1 className="login-panel-title">Manage your union roster, all in one place.</h1>
+        <p className="login-panel-subtitle">
+          Search, add, and update member records securely — built for the
+          people who keep the union running.
+        </p>
+      </div>
+      <div className="login-form-side">
+        <div className="login-card">
           <h2 className="login-title">Welcome back</h2>
           <p className="login-subtitle">Log in to manage union members</p>
           {error && <div className="error">{error}</div>}
@@ -49,7 +61,7 @@ export default function Login() {
               autoComplete="current-password"
             />
             <button type="submit" disabled={submitting} style={{ width: '100%' }}>
-              {submitting ? 'Logging in...' : 'Log In'}
+              <LogIn size={16} /> {submitting ? 'Logging in...' : 'Log In'}
             </button>
           </form>
         </div>

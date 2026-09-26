@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Save, X } from 'lucide-react';
 import { apiFetch } from '../api/client';
-import Header from '../components/Header';
+import Layout from '../components/Layout';
 
 const emptyForm = { memberId: '', memberName: '', officerId: '', phone: '', email: '', address: '' };
 
@@ -69,18 +70,16 @@ export default function MemberForm() {
 
   if (loading) {
     return (
-      <>
-        <Header />
+      <Layout>
         <div className="container" style={{ maxWidth: 560 }}>
           <div className="card">Loading…</div>
         </div>
-      </>
+      </Layout>
     );
   }
 
   return (
-    <>
-      <Header />
+    <Layout>
       <div className="container" style={{ maxWidth: 560 }}>
         <div className="card">
           <h2>{isEdit ? 'Edit Member' : 'Add Member'}</h2>
@@ -129,12 +128,16 @@ export default function MemberForm() {
             <input id="address" value={form.address} onChange={(e) => update('address', e.target.value)} />
 
             <div className="form-actions">
-              <button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
-              <button type="button" className="secondary" onClick={() => navigate('/')}>Cancel</button>
+              <button type="submit" disabled={saving}>
+                <Save size={16} /> {saving ? 'Saving...' : 'Save'}
+              </button>
+              <button type="button" className="secondary" onClick={() => navigate('/')}>
+                <X size={16} /> Cancel
+              </button>
             </div>
           </form>
         </div>
       </div>
-    </>
+    </Layout>
   );
 }

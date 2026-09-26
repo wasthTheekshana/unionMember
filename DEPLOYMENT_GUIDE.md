@@ -14,7 +14,7 @@ ecosystem.config.js   (this repo's root - PM2 reads it from here)
 ```
 
 - **Backend port:** 5003 (IT-Asset-Management uses 5000, so this avoids collision)
-- **Public URL:** http://192.168.2.199:8082 (nginx listens on 8082, proxies `/api` to `localhost:5003`)
+- **Public URL:** http://192.168.2.199:8083 (nginx listens on 8083, proxies `/api` to `localhost:5003`)
 
 ## 1. Get the code onto the server
 
@@ -102,7 +102,7 @@ sudo ln -s /etc/nginx/sites-available/union-members /etc/nginx/sites-enabled/uni
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Then open `http://192.168.2.199:8082` and log in with the admin credentials
+Then open `http://192.168.2.199:8083` and log in with the admin credentials
 created in step 2.
 
 ## Updating after a code change

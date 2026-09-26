@@ -6,7 +6,7 @@ app on the same server, under PM2 + nginx.
 ## Layout on the server
 
 ```
-/home/itasset/apps/UNION-Members-Management/
+/home/UnionMangementSystem/
   backend/
   frontend/
   logs/              (created during setup, see below)
@@ -18,10 +18,14 @@ ecosystem.config.js   (this repo's root - PM2 reads it from here)
 
 ## 1. Get the code onto the server
 
+Copy the project (excluding `node_modules`, `.env`, `frontend/dist`, and
+`.superpowers/`) to `/home/UnionMangementSystem` — e.g. via `scp`/WinSCP from
+your dev machine. `node_modules` must NOT be copied across: it contains
+platform-specific native bindings and has to be installed fresh on the
+server (see step 2).
+
 ```bash
-cd /home/itasset/apps
-git clone <this-repo-url> UNION-Members-Management
-cd UNION-Members-Management
+cd /home/UnionMangementSystem
 mkdir -p logs
 ```
 
@@ -76,7 +80,7 @@ This produces `frontend/dist/`, which nginx serves directly as static files
 
 ## 4. Start the backend with PM2
 
-From the repo root (`/home/itasset/apps/UNION-Members-Management`):
+From the repo root (`/home/UnionMangementSystem`):
 
 ```bash
 pm2 start ecosystem.config.js
@@ -103,9 +107,11 @@ created in step 2.
 
 ## Updating after a code change
 
+Copy the updated files over (excluding `node_modules`, `.env`, `frontend/dist`)
+the same way as step 1, then:
+
 ```bash
-cd /home/itasset/apps/UNION-Members-Management
-git pull
+cd /home/UnionMangementSystem
 cd backend && npm install --production
 cd ../frontend && npm install && npm run build
 pm2 restart union-members-backend

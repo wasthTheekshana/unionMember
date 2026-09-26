@@ -45,8 +45,12 @@ NODE_ENV=production
 JWT_SECRET=<generate a new, strong secret - do NOT reuse the dev one>
 ```
 
-`node-oracledb` runs in thin mode, so no Oracle Instant Client / `LD_LIBRARY_PATH`
-/ `ORACLE_HOME` setup is needed here (unlike IT-Asset-Management's config).
+`node-oracledb` runs in thin mode, so it does not strictly require the Oracle
+Instant Client. `ecosystem.config.js` still sets `LD_LIBRARY_PATH` and
+`ORACLE_HOME` to the same values as IT-Asset-Management's config, since both
+apps connect to the same Oracle instance on this server and that keeps the
+environment consistent between the two PM2 processes — harmless for a
+thin-mode connection either way.
 
 Run once, against the server's Oracle instance:
 

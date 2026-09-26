@@ -10,7 +10,9 @@ module.exports = {
     max_memory_restart: '1G',
     env: {
       NODE_ENV: 'production',
-      PORT: 5003
+      PORT: 5003,
+      LD_LIBRARY_PATH: '/opt/oracle/product/21c/dbhomeXE/lib',
+      ORACLE_HOME: '/opt/oracle/product/21c/dbhomeXE'
     },
     error_file: '/home/itasset/apps/UNION-Members-Management/logs/backend-error.log',
     out_file: '/home/itasset/apps/UNION-Members-Management/logs/backend-out.log',

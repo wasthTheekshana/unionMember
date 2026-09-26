@@ -53,16 +53,27 @@ script, not a recurring feature), email notifications.
 
 ## Data Model
 
+Tables are prefixed `pm_` because this app runs in a shared Oracle "system"
+schema alongside other applications (e.g. IT-Asset-Management) — unprefixed
+names like `users` collide with tables those other apps already own.
+Auto-increment IDs (`pm_officers.officer_id`, `pm_users.user_id`) use a
+sequence + `BEFORE INSERT` trigger, matching the convention used by
+IT-Asset-Management's schema scripts (`setupAllTables.js`), rather than
+`GENERATED ALWAYS AS IDENTITY`.
+
 ```sql
-CREATE TABLE officers (
-  officer_id   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE SEQUENCE pm_officers_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE pm_users_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE pm_officers (
+  officer_id   NUMBER PRIMARY KEY,
   officer_name VARCHAR2(200) NOT NULL UNIQUE
 );
 
-CREATE TABLE members (
+CREATE TABLE pm_members (
   member_id    VARCHAR2(20) PRIMARY KEY, -- preserved from source CSV, not generated
   member_name  VARCHAR2(200) NOT NULL,
-  officer_id   NUMBER REFERENCES officers(officer_id),
+  officer_id   NUMBER REFERENCES pm_officers(officer_id),
   phone        VARCHAR2(50),
   email        VARCHAR2(200),
   address      VARCHAR2(500),
@@ -70,12 +81,20 @@ CREATE TABLE members (
   updated_at   TIMESTAMP DEFAULT SYSTIMESTAMP
 );
 
-CREATE TABLE users (
-  user_id       NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE pm_users (
+  user_id       NUMBER PRIMARY KEY,
   username      VARCHAR2(100) NOT NULL UNIQUE,
   password_hash VARCHAR2(255) NOT NULL,
   created_at    TIMESTAMP DEFAULT SYSTIMESTAMP
 );
+
+CREATE OR REPLACE TRIGGER trg_pm_officers_id
+BEFORE INSERT ON pm_officers FOR EACH ROW
+BEGIN IF :NEW.officer_id IS NULL THEN SELECT pm_officers_seq.NEXTVAL INTO :NEW.officer_id FROM DUAL; END IF; END;
+
+CREATE OR REPLACE TRIGGER trg_pm_users_id
+BEFORE INSERT ON pm_users FOR EACH ROW
+BEGIN IF :NEW.user_id IS NULL THEN SELECT pm_users_seq.NEXTVAL INTO :NEW.user_id FROM DUAL; END IF; END;
 ```
 
 `member_id` is preserved as-is from the CSV, as text, rather than auto-generated
@@ -90,8 +109,8 @@ implementation plan's ledger for the ruling.)
 
 One-time script (`backend/src/scripts/import-csv.js`):
 1. Parse `UNION_Members.csv`.
-2. Extract distinct `Collecting Officer` values → insert into `officers`.
-3. Insert each row into `members`, resolving `officer_id` by name lookup.
+2. Extract distinct `Collecting Officer` values → insert into `pm_officers`.
+3. Insert each row into `pm_members`, resolving `officer_id` by name lookup.
    Contact Info column is blank in source data, so `phone`/`email`/`address`
    start empty and get filled in later via the UI.
 4. Run once against a fresh schema; not part of the app's runtime.

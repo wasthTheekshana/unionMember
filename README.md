@@ -47,3 +47,8 @@ Backend tests run against the real Oracle DB configured in `backend/.env`:
 ```bash
 cd backend && npm test
 ```
+
+## Deployment
+
+For running this app on a server via PM2 + nginx (e.g. alongside another
+app on the same box), see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).

@@ -47,9 +47,9 @@ router.post('/login', asyncHandler(async (req, res) => {
   const userKey = `${username.toLowerCase()}|${req.ip}`;
   const ipKey = req.ip;
   const nameKey = username.toLowerCase();
-  const wait = Math.max(
-    userLimiter.retryAfter(userKey), ipLimiter.retryAfter(ipKey), nameLimiter.retryAfter(nameKey)
-  );
+  // Count the attempt NOW, before any await, so parallel guesses cannot slip past the
+  // limit while earlier ones are still waiting on the database / bcrypt.
+  const wait = Math.max(userLimiter.consume(userKey), ipLimiter.consume(ipKey), nameLimiter.consume(nameKey));
   if (wait > 0) return tooMany(res, wait);
 
   const result = await query(
@@ -59,15 +59,15 @@ router.post('/login', asyncHandler(async (req, res) => {
   const user = result.rows[0];
   const match = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
   if (!user || !match) {
-    userLimiter.fail(userKey);
-    ipLimiter.fail(ipKey);
-    nameLimiter.fail(nameKey);
     console.warn(`Failed login for "${username.slice(0, 40)}" from ${req.ip}`);
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
+  // A correct password clears this username's counters; the shared per-address counter
+  // only gets this one attempt back (so a valid login cannot be used to reset it).
   userLimiter.reset(userKey);
   nameLimiter.reset(nameKey);
+  ipLimiter.refund(ipKey);
   await audit(null, { user: { userId: user.user_id, username: user.username } }, 'login', 'user', user.user_id);
   res.json({ token: sign(user) });
 }));
@@ -89,12 +89,11 @@ router.post('/change-password', requireAuth, asyncHandler(async (req, res) => {
   }
 
   const key = String(req.user.userId);
-  const wait = passwordLimiter.retryAfter(key);
+  const wait = passwordLimiter.consume(key); // counted before any await (see /login)
   if (wait > 0) return tooMany(res, wait);
 
   const r = await query(`SELECT password_hash FROM pm_users WHERE user_id = $1`, [req.user.userId]);
   if (r.rows.length === 0 || !(await bcrypt.compare(currentPassword, r.rows[0].password_hash))) {
-    passwordLimiter.fail(key);
     return res.status(400).json({ error: 'Current password is incorrect' });
   }
   passwordLimiter.reset(key);

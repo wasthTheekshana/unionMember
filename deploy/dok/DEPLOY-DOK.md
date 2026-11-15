@@ -171,6 +171,13 @@ now and then to protect the boot disk.
 - The database is only on the internal `samithiya-app-net` network.
 - Login: a username is locked out after 5 failures in 15 minutes. The container is told to
   trust nginx's X-Forwarded-For (`TRUST_PROXY`), so the lock applies per real client address.
+- If the admin is ever locked out (too many wrong passwords, or someone tried to lock the
+  account on purpose), wait 15 minutes, or clear it at once. The counters live in memory:
+
+  ```
+  cd ~/samithiya-stack
+  docker compose restart app
+  ```
 - Every payment, void, fee change and deletion is written to the Activity log.
 - UFW is inactive on this server. Do not enable it casually (no console fallback if SSH is
   blocked); flag it if a change depends on it.

@@ -45,6 +45,14 @@ describe('failure limiter', () => {
     t = 1001;
     expect(l.retryAfter('k')).toBe(0);
   });
+  it('consume counts the attempt immediately and refund gives it back', () => {
+    const l = createLimiter({ max: 2 });
+    expect(l.consume('k')).toBe(0);
+    expect(l.consume('k')).toBe(0);
+    expect(l.consume('k')).toBeGreaterThan(0); // third attempt refused
+    l.refund('k');
+    expect(l.consume('k')).toBe(0); // one slot is free again
+  });
   it('reset clears the count', () => {
     const l = createLimiter({ max: 1 });
     l.fail('k');
@@ -131,6 +139,14 @@ describe('hardening (API)', () => {
       const blocked = await attempt();
       expect(blocked.status).toBe(429);
       expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
+    });
+    it('cannot be beaten by firing many guesses at the same moment', async () => {
+      const attempt = () => request(app).post('/api/auth/login')
+        .send({ username: 'jest_parallel_probe', password: 'nope' });
+      const results = await Promise.all(Array.from({ length: 12 }, attempt));
+      const codes = results.map((r) => r.status);
+      expect(codes.filter((c) => c === 401)).toHaveLength(5); // only the allowed guesses got checked
+      expect(codes.filter((c) => c === 429)).toHaveLength(7);
     });
     it('still caps guessing when every request pretends to come from a new address', async () => {
       // Tests connect from loopback, so X-Forwarded-For is trusted here, like a proxy hop.

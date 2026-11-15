@@ -2,7 +2,7 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 const createApp = require('../src/app');
-const { initPool, closePool, getConnection } = require('../src/db/pool');
+const { initPool, closePool, query } = require('../src/db/pool');
 
 const TEST_USERNAME = 'test_auth_user';
 const TEST_PASSWORD = 'Test1234!';
@@ -13,27 +13,13 @@ describe('POST /api/auth/login', () => {
   beforeAll(async () => {
     await initPool();
     app = createApp();
-    const conn = await getConnection();
-    try {
-      const hash = await bcrypt.hash(TEST_PASSWORD, 10);
-      await conn.execute(
-        `INSERT INTO pm_users (username, password_hash) VALUES (:u, :p)`,
-        { u: TEST_USERNAME, p: hash }
-      );
-      await conn.commit();
-    } finally {
-      await conn.close();
-    }
+    const hash = await bcrypt.hash(TEST_PASSWORD, 10);
+    await query(`INSERT INTO pm_users (username, password_hash) VALUES ($1, $2)`, [TEST_USERNAME, hash]);
   });
 
   afterAll(async () => {
-    const conn = await getConnection();
-    try {
-      await conn.execute(`DELETE FROM pm_users WHERE username = :u`, { u: TEST_USERNAME });
-      await conn.commit();
-    } finally {
-      await conn.close();
-    }
+    await query(`DELETE FROM pm_users WHERE username = $1`, [TEST_USERNAME]);
+    await query(`DELETE FROM pm_audit_log WHERE username = $1`, [TEST_USERNAME]);
     await closePool();
   });
 

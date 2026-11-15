@@ -1,35 +1,27 @@
 const request = require('supertest');
-const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const createApp = require('../src/app');
-const { initPool, closePool, getConnection } = require('../src/db/pool');
-
-function tokenFor() {
-  return jwt.sign({ userId: 1, username: 'tester' }, process.env.JWT_SECRET, { expiresIn: '1h' });
-}
+const { initPool, closePool, query } = require('../src/db/pool');
+const { createTestUser, removeTestUser } = require('./helpers');
 
 const TEST_ID = '999001';
 
 describe('/api/members CRUD', () => {
   let app;
-  const token = tokenFor();
+  let token;
 
   beforeAll(async () => {
     await initPool();
     app = createApp();
+    ({ token } = await createTestUser());
   });
 
   afterEach(async () => {
-    const conn = await getConnection();
-    try {
-      await conn.execute(`DELETE FROM pm_members WHERE member_id = :id`, { id: TEST_ID });
-      await conn.commit();
-    } finally {
-      await conn.close();
-    }
+    await query(`DELETE FROM pm_members WHERE member_id = $1`, [TEST_ID]);
   });
 
   afterAll(async () => {
+    await removeTestUser();
     await closePool();
   });
 
@@ -68,6 +60,37 @@ describe('/api/members CRUD', () => {
       .get(`/api/members/${TEST_ID}`)
       .set('Authorization', `Bearer ${token}`);
     expect(getAfterDelete.status).toBe(404);
+  });
+
+  it('filters the list by updated date range and searches by id', async () => {
+    await request(app)
+      .post('/api/members')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ memberId: TEST_ID, memberName: 'Date Filter Member' });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const list = (qs) =>
+      request(app).get(`/api/members?${qs}`).set('Authorization', `Bearer ${token}`);
+
+    const inRange = await list(`search=${TEST_ID}&dateFrom=${today}&dateTo=${today}`);
+    expect(inRange.status).toBe(200);
+    expect(inRange.body.items.map((m) => m.memberId)).toContain(TEST_ID);
+
+    const onlyFrom = await list(`search=${TEST_ID}&dateFrom=${today}`);
+    expect(onlyFrom.body.items.map((m) => m.memberId)).toContain(TEST_ID);
+
+    const past = await list(`search=${TEST_ID}&dateTo=2000-01-01`);
+    expect(past.body.items).toHaveLength(0);
+
+    const future = await list(`search=${TEST_ID}&dateFrom=2999-01-01`);
+    expect(future.body.items).toHaveLength(0);
+  });
+
+  it('rejects an invalid date filter', async () => {
+    const res = await request(app)
+      .get('/api/members?dateFrom=not-a-date')
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(400);
   });
 
   it('rejects create with missing memberName', async () => {

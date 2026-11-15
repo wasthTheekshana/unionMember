@@ -60,7 +60,7 @@ export default function MemberForm() {
           body: JSON.stringify({ ...payload, memberId: form.memberId.trim() })
         });
       }
-      navigate('/');
+      navigate('/members');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -131,7 +131,7 @@ export default function MemberForm() {
               <button type="submit" disabled={saving}>
                 <Save size={16} /> {saving ? 'Saving...' : 'Save'}
               </button>
-              <button type="button" className="secondary" onClick={() => navigate('/')}>
+              <button type="button" className="secondary" onClick={() => navigate('/members')}>
                 <X size={16} /> Cancel
               </button>
             </div>

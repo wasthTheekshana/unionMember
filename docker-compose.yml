@@ -1,0 +1,116 @@
+# Union Members (samithiya) on the shared DOK Docker server.
+# Stack folder on the server: ~/samithiya-stack   (run every command from this folder)
+# Needs a .env next to this file - copy .env.docker.example and fill it in.
+#
+# No ports are published: the shared nginx in ~/dok-stack reaches samithiya-app:3000
+# over the external "shared-nginx" network. The database is on the internal network only.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: samithiya-db
+    restart: unless-stopped
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Sized to this container's 2G limit: shared_buffers ~25%, effective_cache_size ~75%.
+    command: >
+      postgres -c shared_buffers=512MB
+               -c effective_cache_size=1536MB
+               -c work_mem=8MB
+               -c max_connections=50
+    volumes:
+      - /mnt/disks/data/db/samithiya:/var/lib/postgresql/data
+    networks:
+      - app-net
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2G
+          pids: 200
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot job: creates / upgrades the tables (idempotent), then exits.
+  migrate:
+    build: .
+    image: samithiya-app:latest
+    container_name: samithiya-migrate
+    command: ["node", "src/scripts/create-schema.js"]
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+    networks:
+      - app-net
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+          pids: 100
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    image: samithiya-app:latest
+    container_name: samithiya-app
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      # nginx runs in another container on a private Docker network: trust its
+      # X-Forwarded-For so the login limiter sees real client addresses.
+      TRUST_PROXY: "loopback, uniquelocal"
+    networks:
+      - app-net
+      - shared-nginx
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+          pids: 200
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+networks:
+  app-net:
+    name: samithiya-app-net
+  shared-nginx:
+    name: shared-nginx
+    external: true

@@ -1,0 +1,15 @@
+.git
+.gitignore
+.superpowers
+.env
+.env.*
+**/.env
+**/node_modules
+frontend/dist
+docs
+deploy
+backend/tests
+*.md
+*.csv
+Dockerfile
+docker-compose.yml

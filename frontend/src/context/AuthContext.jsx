@@ -20,8 +20,14 @@ export function AuthProvider({ children }) {
     setTokenState(null);
   }, []);
 
+  // Swap in a fresh token (after a password change) without logging out.
+  const replaceToken = useCallback((newToken) => {
+    setToken(newToken);
+    setTokenState(newToken);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ token, login, logout }}>
+    <AuthContext.Provider value={{ token, login, logout, replaceToken }}>
       {children}
     </AuthContext.Provider>
   );

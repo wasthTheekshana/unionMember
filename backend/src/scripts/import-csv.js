@@ -2,7 +2,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const { parse } = require('csv-parse/sync');
-const { initPool, closePool, getConnection } = require('../db/pool');
+const { initPool, closePool, withTransaction } = require('../db/pool');
 
 const CSV_PATH = path.join(__dirname, '..', '..', '..', 'UNION_Members.csv');
 
@@ -11,69 +11,40 @@ async function run() {
   const records = parse(raw, { columns: true, skip_empty_lines: true, trim: true });
 
   await initPool();
-  const conn = await getConnection();
   try {
-    const officerNames = [...new Set(
-      records
-        .map((r) => (r['Collecting Officer'] || '').trim())
-        .filter((name) => name.length > 0)
-    )];
-
-    const officerIdByName = {};
-    for (const name of officerNames) {
-      const existing = await conn.execute(
-        `SELECT officer_id FROM pm_officers WHERE officer_name = :n`,
-        { n: name }
-      );
-      if (existing.rows.length > 0) {
-        officerIdByName[name] = existing.rows[0].OFFICER_ID;
-      } else {
-        const inserted = await conn.execute(
-          `INSERT INTO pm_officers (officer_name) VALUES (:n) RETURNING officer_id INTO :id`,
-          { n: name, id: { dir: require('oracledb').BIND_OUT, type: require('oracledb').NUMBER } }
+    await withTransaction(async (db) => {
+      const officerNames = [...new Set(
+        records.map((r) => (r['Collecting Officer'] || '').trim()).filter((n) => n.length > 0)
+      )];
+      const officerIdByName = {};
+      for (const name of officerNames) {
+        const r = await db.query(
+          `INSERT INTO pm_officers (officer_name) VALUES ($1)
+           ON CONFLICT (officer_name) DO UPDATE SET officer_name = EXCLUDED.officer_name
+           RETURNING officer_id`,
+          [name]
         );
-        officerIdByName[name] = inserted.outBinds.id[0];
-      }
-    }
-    await conn.commit();
-
-    let imported = 0;
-    let skipped = 0;
-    for (const record of records) {
-      const memberId = (record['Member ID'] || '').trim();
-      const memberName = (record['Member Name'] || '').trim();
-      const officerName = (record['Collecting Officer'] || '').trim();
-      if (!memberId || !memberName) {
-        skipped += 1;
-        continue;
+        officerIdByName[name] = r.rows[0].officer_id;
       }
 
-      const exists = await conn.execute(
-        `SELECT member_id FROM pm_members WHERE member_id = :id`,
-        { id: memberId }
-      );
-      if (exists.rows.length > 0) {
-        skipped += 1;
-        continue;
+      let imported = 0;
+      let skipped = 0;
+      for (const record of records) {
+        const memberId = (record['Member ID'] || '').trim();
+        const memberName = (record['Member Name'] || '').trim();
+        const officerName = (record['Collecting Officer'] || '').trim();
+        if (!memberId || !memberName) { skipped += 1; continue; }
+        const r = await db.query(
+          `INSERT INTO pm_members (member_id, member_name, officer_id) VALUES ($1, $2, $3)
+           ON CONFLICT (member_id) DO NOTHING`,
+          [memberId, memberName, officerIdByName[officerName] || null]
+        );
+        if (r.rowCount === 1) imported += 1; else skipped += 1;
       }
-
-      await conn.execute(
-        `INSERT INTO pm_members (member_id, member_name, officer_id)
-         VALUES (:memberId, :memberName, :officerId)`,
-        {
-          memberId,
-          memberName,
-          officerId: officerIdByName[officerName] || null
-        }
-      );
-      imported += 1;
-    }
-    await conn.commit();
-
-    console.log(`Officers created/matched: ${officerNames.length}`);
-    console.log(`Members imported: ${imported}, skipped (duplicate or invalid): ${skipped}`);
+      console.log(`Officers created/matched: ${officerNames.length}`);
+      console.log(`Members imported: ${imported}, skipped (duplicate or invalid): ${skipped}`);
+    });
   } finally {
-    await conn.close();
     await closePool();
   }
 }

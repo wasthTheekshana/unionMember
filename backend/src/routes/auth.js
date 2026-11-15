@@ -47,10 +47,17 @@ router.post('/login', asyncHandler(async (req, res) => {
   const userKey = `${username.toLowerCase()}|${req.ip}`;
   const ipKey = req.ip;
   const nameKey = username.toLowerCase();
-  // Count the attempt NOW, before any await, so parallel guesses cannot slip past the
-  // limit while earlier ones are still waiting on the database / bcrypt.
-  const wait = Math.max(userLimiter.consume(userKey), ipLimiter.consume(ipKey), nameLimiter.consume(nameKey));
+  // 1) Check every limiter. A refused attempt is NOT counted anywhere, so someone who is
+  //    locked out on one limiter cannot use up the shared per-address allowance of others.
+  const wait = Math.max(
+    userLimiter.retryAfter(userKey), ipLimiter.retryAfter(ipKey), nameLimiter.retryAfter(nameKey)
+  );
   if (wait > 0) return tooMany(res, wait);
+  // 2) Count the attempt NOW, in the same synchronous step and before any await, so parallel
+  //    guesses cannot slip past the limit while earlier ones wait on the database / bcrypt.
+  userLimiter.fail(userKey);
+  ipLimiter.fail(ipKey);
+  nameLimiter.fail(nameKey);
 
   const result = await query(
     `SELECT user_id, username, password_hash, token_version FROM pm_users WHERE username = $1`,

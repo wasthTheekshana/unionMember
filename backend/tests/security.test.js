@@ -140,6 +140,18 @@ describe('hardening (API)', () => {
       expect(blocked.status).toBe(429);
       expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
     });
+    it('does not count refused attempts against the shared per-address allowance', async () => {
+      const from = (name) => request(app).post('/api/auth/login')
+        .set('X-Forwarded-For', '203.0.113.77')
+        .send({ username: name, password: 'nope' });
+      for (let i = 0; i < 5; i += 1) expect((await from('jest_refused_probe')).status).toBe(401);
+      // Keep hammering the locked-out name: every one of these is refused.
+      let last;
+      for (let i = 0; i < 40; i += 1) last = await from('jest_refused_probe');
+      expect(last.status).toBe(429);
+      // Someone else behind the same address must not have been locked out by that.
+      expect((await from('jest_other_user_probe')).status).toBe(401);
+    });
     it('cannot be beaten by firing many guesses at the same moment', async () => {
       const attempt = () => request(app).post('/api/auth/login')
         .send({ username: 'jest_parallel_probe', password: 'nope' });

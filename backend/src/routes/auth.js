@@ -13,6 +13,9 @@ const router = express.Router();
 const MAX_USER_ATTEMPTS = parseInt(process.env.LOGIN_MAX_ATTEMPTS, 10) || 5;
 const userLimiter = createLimiter({ max: MAX_USER_ATTEMPTS });   // per username + IP
 const ipLimiter = createLimiter({ max: MAX_USER_ATTEMPTS * 6 }); // per IP, any username
+// Per username from ANY address. A client address can be faked by something that reaches
+// the app container directly, so this caps guessing against one account regardless of IP.
+const nameLimiter = createLimiter({ max: MAX_USER_ATTEMPTS * 5 });
 const passwordLimiter = createLimiter({ max: MAX_USER_ATTEMPTS }); // wrong current password
 
 // Compared against when the user does not exist, so response time does not
@@ -43,7 +46,10 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   const userKey = `${username.toLowerCase()}|${req.ip}`;
   const ipKey = req.ip;
-  const wait = Math.max(userLimiter.retryAfter(userKey), ipLimiter.retryAfter(ipKey));
+  const nameKey = username.toLowerCase();
+  const wait = Math.max(
+    userLimiter.retryAfter(userKey), ipLimiter.retryAfter(ipKey), nameLimiter.retryAfter(nameKey)
+  );
   if (wait > 0) return tooMany(res, wait);
 
   const result = await query(
@@ -55,11 +61,13 @@ router.post('/login', asyncHandler(async (req, res) => {
   if (!user || !match) {
     userLimiter.fail(userKey);
     ipLimiter.fail(ipKey);
+    nameLimiter.fail(nameKey);
     console.warn(`Failed login for "${username.slice(0, 40)}" from ${req.ip}`);
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
   userLimiter.reset(userKey);
+  nameLimiter.reset(nameKey);
   await audit(null, { user: { userId: user.user_id, username: user.username } }, 'login', 'user', user.user_id);
   res.json({ token: sign(user) });
 }));

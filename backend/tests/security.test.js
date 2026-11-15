@@ -132,6 +132,14 @@ describe('hardening (API)', () => {
       expect(blocked.status).toBe(429);
       expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
     });
+    it('still caps guessing when every request pretends to come from a new address', async () => {
+      // Tests connect from loopback, so X-Forwarded-For is trusted here, like a proxy hop.
+      const attempt = (n) => request(app).post('/api/auth/login')
+        .set('X-Forwarded-For', `198.51.100.${n}`)
+        .send({ username: 'jest_spoof_probe', password: 'nope' });
+      for (let i = 1; i <= 25; i += 1) expect((await attempt(i)).status).toBe(401);
+      expect((await attempt(26)).status).toBe(429);
+    });
     it('rejects non-string credentials', async () => {
       const res = await request(app).post('/api/auth/login').send({ username: { $ne: 1 }, password: 'x' });
       expect(res.status).toBe(400);
